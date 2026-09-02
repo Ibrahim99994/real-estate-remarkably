@@ -399,6 +399,7 @@ function HomePage() {
             )}
           </section>
         </div>
+        )}
       </main>
     </div>
   );
