@@ -14,7 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      payments: {
+        Row: {
+          amount_usd: number
+          created_at: string
+          id: string
+          invoice_id: string | null
+          invoice_url: string | null
+          order_id: string
+          pay_currency: string | null
+          provider_payment_id: string | null
+          raw: Json | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_usd: number
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          invoice_url?: string | null
+          order_id: string
+          pay_currency?: string | null
+          provider_payment_id?: string | null
+          raw?: Json | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_usd?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          invoice_url?: string | null
+          order_id?: string
+          pay_currency?: string | null
+          provider_payment_id?: string | null
+          raw?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          current_period_end: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          current_period_end?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          current_period_end?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
