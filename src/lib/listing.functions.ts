@@ -32,8 +32,8 @@ export const generateListing = createServerFn({ method: "POST" })
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("AI is not configured. Missing LOVABLE_API_KEY.");
 
-    const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
-    const gateway = createLovableAiGatewayProvider(key);
+    const { createLovableResponsesProvider } = await import("./ai-gateway.server");
+    const gateway = createLovableResponsesProvider(key);
 
     const facts = [
       `Address: ${data.address}`,
@@ -59,7 +59,7 @@ export const generateListing = createServerFn({ method: "POST" })
 
     try {
       const result = streamText({
-        model: gateway("google/gemini-3.6-flash"),
+        model: gateway("openai/gpt-5.6-sol"),
         system:
           "You are a top-producing real estate copywriter. You write accurate, compliant, vivid listing copy. Never mention protected classes, schools' quality, or neighborhood demographics.",
         output: Output.object({ schema: ListingOutput }),
