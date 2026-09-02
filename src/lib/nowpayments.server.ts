@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 export const NOWPAYMENTS_API = "https://api.nowpayments.io/v1";
 
 /** USDT network the payout wallet expects (0x… address → ERC-20). */
-export const PAYOUT_CURRENCY = "usderc20";
+export const PAYOUT_CURRENCY = "usdterc20";
 
 export const PLAN_PRICE_USD = 29;
 export const PLAN_PERIOD_DAYS = 30;
