@@ -27,7 +27,7 @@ const ListingOutput = z.object({
 export type ListingResult = z.infer<typeof ListingOutput>;
 
 export const generateListing = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => ListingInput.parse(input))
+  .validator((input: unknown) => ListingInput.parse(input))
   .handler(async ({ data }) => {
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("AI is not configured. Missing LOVABLE_API_KEY.");
