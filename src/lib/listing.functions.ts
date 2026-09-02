@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { streamText, Output } from "ai";
 import { z } from "zod";
 
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
 const ListingInput = z.object({
   address: z.string().min(3),
   price: z.string().min(1),
