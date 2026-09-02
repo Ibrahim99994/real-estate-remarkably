@@ -230,6 +230,32 @@ function HomePage() {
           captions for Instagram, Facebook and LinkedIn.
         </p>
 
+        {!authReady || (!!session && billing.isLoading) ? (
+          <div className="mt-16 flex justify-center">
+            <Loader2 className="size-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : !session ? (
+          <div className="mx-auto mt-12 max-w-md rounded-2xl border border-border bg-card p-8 text-center">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+              $29/month, cancel any time
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Create an account to subscribe and start generating listing copy.
+            </p>
+            <Button asChild className="mt-6 w-full">
+              <Link to="/auth">Sign in or create account</Link>
+            </Button>
+          </div>
+        ) : !billing.data?.active ? (
+          <Paywall
+            email={session.email}
+            onSignOut={() => {
+              supabase.auth.signOut();
+            }}
+          />
+        ) : (
+
+
         <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
           <form onSubmit={onSubmit} className="space-y-5 rounded-2xl border border-border bg-card p-6">
             <div>
