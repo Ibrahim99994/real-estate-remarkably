@@ -2,4 +2,9 @@
 
 - [x] Listing generator UI (photos, address, price, beds, baths, tone, notes)
 - [x] Server function generating MLS description + social captions
-- [x] Wire Generate button to AI model (Claude requested; Claude is not offered by Lovable AI — using the default supported model)
+- [x] Wire Generate button to AI model
+- [x] Email + password accounts (/auth)
+- [x] Subscriptions + payments tables, generator gated server-side
+- [x] NOWPayments card-to-crypto checkout ($29 / 30 days) + IPN webhook
+- [ ] Add NOWPAYMENTS_API_KEY and NOWPAYMENTS_IPN_SECRET
+- [ ] Set USDT (ERC-20) payout wallet + IPN URL in NOWPayments dashboard
