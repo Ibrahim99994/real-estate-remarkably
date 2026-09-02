@@ -32,7 +32,8 @@ export const generateListing = createServerFn({ method: "POST" })
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("AI is not configured. Missing LOVABLE_API_KEY.");
 
-    const gateway = createLovableAiGateway(key);
+    const { createLovableAiGatewayProvider } = await import("./ai-gateway.server");
+    const gateway = createLovableAiGatewayProvider(key);
 
     const facts = [
       `Address: ${data.address}`,
@@ -75,11 +76,3 @@ export const generateListing = createServerFn({ method: "POST" })
       );
     }
   });
-
-function createLovableAiGateway(key: string) {
-  // Imported lazily-safe: provider helper is server-only.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  return providerFactory(key);
-}
-
-import { createLovableAiGatewayProvider as providerFactory } from "./ai-gateway.server";
