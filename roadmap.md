@@ -7,4 +7,4 @@
 - [x] Subscriptions + payments tables, generator gated server-side
 - [x] NOWPayments card-to-crypto checkout ($29 / 30 days) + IPN webhook
 - [ ] Add NOWPAYMENTS_API_KEY and NOWPAYMENTS_IPN_SECRET
-- [ ] Set USDT (ERC-20) payout wallet + IPN URL in NOWPayments dashboard
+- [ ] Set USDT (BEP-20) payout wallet + IPN URL in NOWPayments dashboard
