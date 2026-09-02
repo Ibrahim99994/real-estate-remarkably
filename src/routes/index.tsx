@@ -1,10 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useMutation } from "@tanstack/react-query";
-import { useRef, useState } from "react";
-import { Copy, Home, ImagePlus, Loader2, Sparkles, X } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { Check, Copy, Home, ImagePlus, Loader2, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { generateListing, type ListingResult } from "@/lib/listing.functions";
+import { createSubscriptionCheckout, getBillingStatus } from "@/lib/billing.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
