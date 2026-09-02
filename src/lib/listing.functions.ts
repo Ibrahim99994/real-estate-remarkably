@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { streamText, Output } from "ai";
 import { z } from "zod";
 
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
 const ListingInput = z.object({
   address: z.string().min(3),
   price: z.string().min(1),
@@ -27,8 +29,20 @@ const ListingOutput = z.object({
 export type ListingResult = z.infer<typeof ListingOutput>;
 
 export const generateListing = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .validator((input: unknown) => ListingInput.parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { data: sub } = await context.supabase
+      .from("subscriptions")
+      .select("status, current_period_end")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    const active =
+      sub?.status === "active" &&
+      !!sub.current_period_end &&
+      new Date(sub.current_period_end).getTime() > Date.now();
+    if (!active) throw new Error("Your subscription is not active. Please subscribe to generate copy.");
+
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("AI is not configured. Missing LOVABLE_API_KEY.");
 

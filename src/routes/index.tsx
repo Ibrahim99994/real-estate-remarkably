@@ -1,10 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useMutation } from "@tanstack/react-query";
-import { useRef, useState } from "react";
-import { Copy, Home, ImagePlus, Loader2, Sparkles, X } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { Check, Copy, Home, ImagePlus, Loader2, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { generateListing, type ListingResult } from "@/lib/listing.functions";
+import { createSubscriptionCheckout, getBillingStatus } from "@/lib/billing.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -85,9 +87,82 @@ function CopyBlock({
   );
 }
 
+function Paywall({ email, onSignOut }: { email: string; onSignOut: () => void }) {
+  const checkout = useServerFn(createSubscriptionCheckout);
+  const startCheckout = useMutation({
+    mutationFn: () => checkout({}) as Promise<{ url: string }>,
+    onSuccess: (d) => {
+      window.location.href = d.url;
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="mx-auto mt-12 max-w-md rounded-2xl border border-border bg-card p-8 text-center">
+      <p className="text-sm text-muted-foreground">Signed in as {email}</p>
+      <h2 className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
+        ListingCraft Pro — $29/month
+      </h2>
+      <ul className="mt-6 space-y-2 text-left text-sm text-card-foreground">
+        {[
+          "Unlimited MLS-ready listing descriptions",
+          "Instagram, Facebook and LinkedIn captions",
+          "Photo-aware highlights and hashtags",
+          "Pay by credit or debit card — 30 days of access",
+        ].map((f) => (
+          <li key={f} className="flex items-start gap-2">
+            <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
+      <Button
+        className="mt-7 w-full"
+        onClick={() => startCheckout.mutate()}
+        disabled={startCheckout.isPending}
+      >
+        {startCheckout.isPending && <Loader2 className="size-4 animate-spin" />}
+        Pay $29 by card
+      </Button>
+      <p className="mt-3 text-xs text-muted-foreground">
+        Card payments are processed by NOWPayments and settled in USDT.
+      </p>
+      <button
+        type="button"
+        onClick={onSignOut}
+        className="mt-5 text-sm text-muted-foreground underline-offset-4 hover:underline"
+      >
+        Sign out
+      </button>
+    </div>
+  );
+}
+
 function HomePage() {
   const generate = useServerFn(generateListing);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const [session, setSession] = useState<{ email: string } | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session ? { email: data.session.user.email ?? "" } : null);
+      setAuthReady(true);
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      setSession(s ? { email: s.user.email ?? "" } : null);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  const billing = useQuery({
+    queryKey: ["billing", session?.email],
+    enabled: !!session,
+    refetchInterval: (q) => (q.state.data?.active ? false : 15000),
+    queryFn: () => getBillingStatus() as Promise<{ active: boolean }>,
+  });
+
 
   const [photos, setPhotos] = useState<string[]>([]);
   const [address, setAddress] = useState("");
@@ -154,6 +229,32 @@ function HomePage() {
           Add a few photos and the basics. Get an MLS-ready description, highlight bullets, and
           captions for Instagram, Facebook and LinkedIn.
         </p>
+
+        {!authReady || (!!session && billing.isLoading) ? (
+          <div className="mt-16 flex justify-center">
+            <Loader2 className="size-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : !session ? (
+          <div className="mx-auto mt-12 max-w-md rounded-2xl border border-border bg-card p-8 text-center">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+              $29/month, cancel any time
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Create an account to subscribe and start generating listing copy.
+            </p>
+            <Button asChild className="mt-6 w-full">
+              <Link to="/auth">Sign in or create account</Link>
+            </Button>
+          </div>
+        ) : !billing.data?.active ? (
+          <Paywall
+            email={session.email}
+            onSignOut={() => {
+              supabase.auth.signOut();
+            }}
+          />
+        ) : (
+
 
         <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
           <form onSubmit={onSubmit} className="space-y-5 rounded-2xl border border-border bg-card p-6">
@@ -324,6 +425,7 @@ function HomePage() {
             )}
           </section>
         </div>
+        )}
       </main>
     </div>
   );
