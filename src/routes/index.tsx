@@ -30,7 +30,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { generateListing, type ListingResult } from "@/lib/listing.functions";
+import {
+  generateListing,
+  generateListingFree,
+  type ListingResult,
+} from "@/lib/listing.functions";
 import { createSubscriptionCheckout, getBillingStatus } from "@/lib/billing.functions";
 import heroHome from "@/assets/hero-home.jpg";
 
