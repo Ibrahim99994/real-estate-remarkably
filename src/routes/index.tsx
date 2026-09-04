@@ -133,17 +133,37 @@ function LandingPage() {
               size="lg"
               className="h-12 bg-white px-8 text-base font-semibold text-slate-900 shadow-xl shadow-black/30 hover:bg-white/90"
             >
-              <Link to="/auth">
-                Start writing listings — $29/mo
+              <a href="#try">
+                Generate your first listing free
                 <ArrowRight className="size-4" />
-              </Link>
+              </a>
             </Button>
-            <p className="text-sm text-white/60">Cancel any time. No per-listing fees.</p>
+            <p className="text-sm text-white/60">No account needed. Then $29/mo for unlimited.</p>
           </div>
         </div>
       </section>
 
+      {/* Free trial generator */}
+      <section id="try" className="mx-auto max-w-6xl scroll-mt-8 px-6 py-24">
+        <div className="mx-auto max-w-2xl text-center">
+          <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-primary">
+            <Sparkles className="size-3.5" />
+            Free trial — 1 listing
+          </span>
+          <h2 className="mt-5 font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+            Try it right now — no signup
+          </h2>
+          <p className="mt-4 text-muted-foreground">
+            Enter a property's details and see the AI-written listing and captions instantly.
+          </p>
+        </div>
+        <div className="mt-12">
+          <Generator variant="free" />
+        </div>
+      </section>
+
       {/* Before / After */}
+
       <section className="mx-auto max-w-6xl px-6 py-24">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
