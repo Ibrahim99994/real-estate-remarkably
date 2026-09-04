@@ -1,8 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
-import { streamText, Output } from "ai";
+import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+export type { ListingResult } from "./listing.server";
 
 const ListingInput = z.object({
   address: z.string().min(3),
@@ -15,18 +17,7 @@ const ListingInput = z.object({
   photos: z.array(z.string()).max(6).default([]),
 });
 
-const ListingOutput = z.object({
-  headline: z.string(),
-  mlsDescription: z.string(),
-  shortDescription: z.string(),
-  bullets: z.array(z.string()),
-  instagram: z.string(),
-  facebook: z.string(),
-  linkedin: z.string(),
-  hashtags: z.array(z.string()),
-});
-
-export type ListingResult = z.infer<typeof ListingOutput>;
+const FREE_GENERATIONS = 1;
 
 export const generateListing = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -43,50 +34,49 @@ export const generateListing = createServerFn({ method: "POST" })
       new Date(sub.current_period_end).getTime() > Date.now();
     if (!active) throw new Error("Your subscription is not active. Please subscribe to generate copy.");
 
-    const key = process.env["LOVABLE_API_KEY"];
-    if (!key) throw new Error("AI is not configured. Missing LOVABLE_API_KEY.");
+    const { runGeneration } = await import("./listing.server");
+    return runGeneration(data);
+  });
 
-    const { createLovableResponsesProvider } = await import("./ai-gateway.server");
-    const gateway = createLovableResponsesProvider(key);
+/**
+ * Anonymous trial: one free listing per visitor, enforced server-side.
+ */
+export const generateListingFree = createServerFn({ method: "POST" })
+  .validator((input: unknown) => ListingInput.parse(input))
+  .handler(async ({ data }) => {
+    const { createHash } = await import("crypto");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { runGeneration } = await import("./listing.server");
 
-    const facts = [
-      `Address: ${data.address}`,
-      `Price: ${data.price}`,
-      `Bedrooms: ${data.beds}`,
-      `Bathrooms: ${data.baths}`,
-      data.sqft ? `Square feet: ${data.sqft}` : "",
-      data.highlights ? `Agent notes: ${data.highlights}` : "",
-      `Tone: ${data.tone}`,
-    ]
-      .filter(Boolean)
-      .join("\n");
+    const req = getRequest();
+    const ip =
+      req.headers.get("cf-connecting-ip") ??
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      "unknown";
+    const visitorKey = createHash("sha256")
+      .update(`${ip}|${req.headers.get("user-agent") ?? ""}`)
+      .digest("hex");
 
-    const content: Array<
-      { type: "text"; text: string } | { type: "image"; image: string }
-    > = [
-      {
-        type: "text",
-        text: `Write marketing copy for this property listing. Use the photos (if any) to describe real visible features — never invent features you cannot see or that are not listed.\n\n${facts}\n\nMLS description: 120-180 words, no fair-housing violations, no discriminatory language, no unverifiable claims. Social captions should be platform-appropriate and include a call to action.`,
-      },
-      ...data.photos.map((p) => ({ type: "image" as const, image: p })),
-    ];
+    const { data: row } = await supabaseAdmin
+      .from("free_trials")
+      .select("uses")
+      .eq("visitor_key", visitorKey)
+      .maybeSingle();
 
-    try {
-      const result = streamText({
-        model: gateway("openai/gpt-5.6-sol"),
-        system:
-          "You are a top-producing real estate copywriter. You write accurate, compliant, vivid listing copy. Never mention protected classes, schools' quality, or neighborhood demographics.",
-        output: Output.object({ schema: ListingOutput }),
-        messages: [{ role: "user", content }],
-      });
-      return (await result.output) as ListingResult;
-    } catch (err: unknown) {
-      const status = (err as { statusCode?: number; status?: number })?.statusCode ??
-        (err as { status?: number })?.status;
-      if (status === 429) throw new Error("Rate limited by AI service. Please try again in a moment.");
-      if (status === 402) throw new Error("AI credits exhausted. Add credits in Lovable to keep generating.");
+    if ((row?.uses ?? 0) >= FREE_GENERATIONS) {
       throw new Error(
-        err instanceof Error ? err.message : "Generation failed. Please try again.",
+        "You've used your free listing. Sign up for $29/month to generate unlimited listings.",
       );
     }
+
+    const result = await runGeneration(data);
+
+    await supabaseAdmin
+      .from("free_trials")
+      .upsert(
+        { visitor_key: visitorKey, uses: (row?.uses ?? 0) + 1, updated_at: new Date().toISOString() },
+        { onConflict: "visitor_key" },
+      );
+
+    return result;
   });
