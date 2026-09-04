@@ -406,10 +406,271 @@ function Paywall({ email, onSignOut }: { email: string; onSignOut: () => void })
   );
 }
 
-function HomePage() {
-  const generate = useServerFn(generateListing);
+function Generator({ variant }: { variant: "free" | "pro" }) {
+  const generatePro = useServerFn(generateListing);
+  const generateFree = useServerFn(generateListingFree);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [address, setAddress] = useState("");
+  const [price, setPrice] = useState("");
+  const [beds, setBeds] = useState("");
+  const [baths, setBaths] = useState("");
+  const [sqft, setSqft] = useState("");
+  const [highlights, setHighlights] = useState("");
+  const [tone, setTone] = useState("professional");
+  const [freeUsed, setFreeUsed] = useState(false);
+
+  useEffect(() => {
+    if (variant === "free" && localStorage.getItem("lc_free_used") === "1") setFreeUsed(true);
+  }, [variant]);
+
+  const mutation = useMutation<ListingResult>({
+    mutationFn: () => {
+      const payload = { data: { address, price, beds, baths, sqft, highlights, tone, photos } };
+      return (variant === "free" ? generateFree(payload) : generatePro(payload)) as Promise<ListingResult>;
+    },
+    onSuccess: () => {
+      if (variant === "free") {
+        localStorage.setItem("lc_free_used", "1");
+        setFreeUsed(true);
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  async function onPickPhotos(files: FileList | null) {
+    if (!files?.length) return;
+    const room = MAX_PHOTOS - photos.length;
+    if (room <= 0) {
+      toast.error(`You can attach up to ${MAX_PHOTOS} photos`);
+      return;
+    }
+    const picked = Array.from(files).slice(0, room);
+    const urls = await Promise.all(picked.map(fileToDataUrl));
+    setPhotos((p) => [...p, ...urls]);
+  }
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (variant === "free" && freeUsed) {
+      toast.error("You've used your free listing — sign up for unlimited generations.");
+      return;
+    }
+    if (!address.trim() || !price.trim() || !beds.trim() || !baths.trim()) {
+      toast.error("Address, price, beds and baths are required");
+      return;
+    }
+    mutation.mutate();
+  }
+
+  const result = mutation.data;
+  const locked = variant === "free" && freeUsed;
+
+  return (
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
+      <form onSubmit={onSubmit} className="space-y-5 rounded-2xl border border-border bg-card p-6">
+        <div>
+          <Label className="mb-2 block">Property photos</Label>
+          <div className="grid grid-cols-3 gap-2">
+            {photos.map((src, i) => (
+              <div key={i} className="group relative aspect-square overflow-hidden rounded-lg border border-border">
+                <img src={src} alt={`Property photo ${i + 1}`} className="size-full object-cover" />
+                <button
+                  type="button"
+                  aria-label="Remove photo"
+                  onClick={() => setPhotos((p) => p.filter((_, idx) => idx !== i))}
+                  className="absolute right-1 top-1 rounded-md bg-background/80 p-1 text-foreground opacity-0 transition group-hover:opacity-100"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            ))}
+            {photos.length < MAX_PHOTOS && (
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border text-muted-foreground transition hover:bg-accent"
+              >
+                <ImagePlus className="size-5" />
+                <span className="text-xs">Add</span>
+              </button>
+            )}
+          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              onPickPhotos(e.target.files);
+              e.target.value = "";
+            }}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="address">Address</Label>
+          <Input
+            id="address"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            placeholder="128 Maple Ave, Austin, TX"
+            className="mt-1.5"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="price">Price</Label>
+            <Input id="price" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="$749,000" className="mt-1.5" />
+          </div>
+          <div>
+            <Label htmlFor="sqft">Square feet</Label>
+            <Input id="sqft" value={sqft} onChange={(e) => setSqft(e.target.value)} placeholder="2,140" className="mt-1.5" />
+          </div>
+          <div>
+            <Label htmlFor="beds">Beds</Label>
+            <Input id="beds" value={beds} onChange={(e) => setBeds(e.target.value)} placeholder="4" className="mt-1.5" />
+          </div>
+          <div>
+            <Label htmlFor="baths">Baths</Label>
+            <Input id="baths" value={baths} onChange={(e) => setBaths(e.target.value)} placeholder="2.5" className="mt-1.5" />
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="tone">Tone</Label>
+          <Select value={tone} onValueChange={setTone}>
+            <SelectTrigger id="tone" className="mt-1.5 w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="professional">Professional</SelectItem>
+              <SelectItem value="luxury">Luxury</SelectItem>
+              <SelectItem value="warm">Warm &amp; friendly</SelectItem>
+              <SelectItem value="punchy">Short &amp; punchy</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label htmlFor="highlights">Notes / highlights</Label>
+          <Textarea
+            id="highlights"
+            value={highlights}
+            onChange={(e) => setHighlights(e.target.value)}
+            placeholder="Renovated kitchen, corner lot, new roof 2024, walkable to downtown"
+            className="mt-1.5 min-h-24"
+          />
+        </div>
+
+        {locked ? (
+          <Button asChild size="lg" className="h-12 w-full text-base font-semibold shadow-lg shadow-primary/30">
+            <Link to="/auth">
+              Sign up for $29/month
+              <ArrowRight className="size-4" />
+            </Link>
+          </Button>
+        ) : (
+          <Button type="submit" className="w-full" disabled={mutation.isPending}>
+            {mutation.isPending ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Generating…
+              </>
+            ) : (
+              <>
+                <Sparkles className="size-4" />
+                {variant === "free" ? "Generate my free listing" : "Generate listing copy"}
+              </>
+            )}
+          </Button>
+        )}
+        {variant === "free" && !locked && (
+          <p className="text-center text-xs text-muted-foreground">
+            No account, no card. One free listing on us.
+          </p>
+        )}
+      </form>
+
+      <section aria-live="polite" className="space-y-4">
+        {!result && !mutation.isPending && (
+          <div className="flex h-full min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-border p-10 text-center">
+            <Sparkles className="size-6 text-muted-foreground" />
+            <p className="mt-3 text-sm text-muted-foreground">
+              Your listing description and captions will appear here.
+            </p>
+          </div>
+        )}
+
+        {mutation.isPending && (
+          <div className="flex h-full min-h-72 flex-col items-center justify-center rounded-2xl border border-border p-10 text-center">
+            <Loader2 className="size-6 animate-spin text-muted-foreground" />
+            <p className="mt-3 text-sm text-muted-foreground">Writing your listing copy…</p>
+          </div>
+        )}
+
+        {result && (
+          <>
+            {variant === "free" && (
+              <div className="rounded-2xl border border-primary/30 bg-primary/5 p-6 text-center">
+                <p className="font-display text-xl font-semibold tracking-tight text-foreground">
+                  Like what you see?
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Sign up for $29/month to generate unlimited listings.
+                </p>
+                <Button asChild size="lg" className="mt-5 h-12 px-8 text-base font-semibold shadow-lg shadow-primary/30">
+                  <Link to="/auth">
+                    Sign up for $29/month
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+              </div>
+            )}
+            <CopyBlock title="Headline" text={result.headline} />
+            <CopyBlock title="MLS description" text={result.mlsDescription} />
+            <CopyBlock title="Short description" text={result.shortDescription} />
+            <div className="rounded-xl border border-border bg-card p-5">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  Highlights
+                </h3>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(result.bullets.map((b) => `• ${b}`).join("\n"));
+                    toast.success("Highlights copied");
+                  }}
+                >
+                  <Copy className="size-4" />
+                  Copy
+                </Button>
+              </div>
+              <ul className="list-disc space-y-1 pl-5 text-sm text-card-foreground">
+                {result.bullets.map((b, i) => (
+                  <li key={i}>{b}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <CopyBlock title="Instagram" text={result.instagram} />
+              <CopyBlock title="Facebook" text={result.facebook} />
+              <CopyBlock title="LinkedIn" text={result.linkedin} className="md:col-span-2" />
+            </div>
+            <CopyBlock title="Hashtags" text={result.hashtags.join(" ")} />
+          </>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function HomePage() {
   const [session, setSession] = useState<{ email: string } | null>(null);
   const [authReady, setAuthReady] = useState(false);
 
@@ -431,44 +692,6 @@ function HomePage() {
     queryFn: () => getBillingStatus() as Promise<{ active: boolean }>,
   });
 
-  const [photos, setPhotos] = useState<string[]>([]);
-  const [address, setAddress] = useState("");
-  const [price, setPrice] = useState("");
-  const [beds, setBeds] = useState("");
-  const [baths, setBaths] = useState("");
-  const [sqft, setSqft] = useState("");
-  const [highlights, setHighlights] = useState("");
-  const [tone, setTone] = useState("professional");
-
-  const mutation = useMutation<ListingResult>({
-    mutationFn: () =>
-      generate({
-        data: { address, price, beds, baths, sqft, highlights, tone, photos },
-      }) as Promise<ListingResult>,
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  async function onPickPhotos(files: FileList | null) {
-    if (!files?.length) return;
-    const room = MAX_PHOTOS - photos.length;
-    if (room <= 0) {
-      toast.error(`You can attach up to ${MAX_PHOTOS} photos`);
-      return;
-    }
-    const picked = Array.from(files).slice(0, room);
-    const urls = await Promise.all(picked.map(fileToDataUrl));
-    setPhotos((p) => [...p, ...urls]);
-  }
-
-  function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!address.trim() || !price.trim() || !beds.trim() || !baths.trim()) {
-      toast.error("Address, price, beds and baths are required");
-      return;
-    }
-    mutation.mutate();
-  }
-
   if (!authReady) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -486,8 +709,6 @@ function HomePage() {
       </>
     );
   }
-
-  const result = mutation.data;
 
   return (
     <div className="min-h-screen bg-background">
@@ -518,175 +739,7 @@ function HomePage() {
             }}
           />
         ) : (
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
-            <form onSubmit={onSubmit} className="space-y-5 rounded-2xl border border-border bg-card p-6">
-              <div>
-                <Label className="mb-2 block">Property photos</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {photos.map((src, i) => (
-                    <div key={i} className="group relative aspect-square overflow-hidden rounded-lg border border-border">
-                      <img src={src} alt={`Property photo ${i + 1}`} className="size-full object-cover" />
-                      <button
-                        type="button"
-                        aria-label="Remove photo"
-                        onClick={() => setPhotos((p) => p.filter((_, idx) => idx !== i))}
-                        className="absolute right-1 top-1 rounded-md bg-background/80 p-1 text-foreground opacity-0 transition group-hover:opacity-100"
-                      >
-                        <X className="size-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                  {photos.length < MAX_PHOTOS && (
-                    <button
-                      type="button"
-                      onClick={() => fileRef.current?.click()}
-                      className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border text-muted-foreground transition hover:bg-accent"
-                    >
-                      <ImagePlus className="size-5" />
-                      <span className="text-xs">Add</span>
-                    </button>
-                  )}
-                </div>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    onPickPhotos(e.target.files);
-                    e.target.value = "";
-                  }}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="128 Maple Ave, Austin, TX"
-                  className="mt-1.5"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="price">Price</Label>
-                  <Input id="price" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="$749,000" className="mt-1.5" />
-                </div>
-                <div>
-                  <Label htmlFor="sqft">Square feet</Label>
-                  <Input id="sqft" value={sqft} onChange={(e) => setSqft(e.target.value)} placeholder="2,140" className="mt-1.5" />
-                </div>
-                <div>
-                  <Label htmlFor="beds">Beds</Label>
-                  <Input id="beds" value={beds} onChange={(e) => setBeds(e.target.value)} placeholder="4" className="mt-1.5" />
-                </div>
-                <div>
-                  <Label htmlFor="baths">Baths</Label>
-                  <Input id="baths" value={baths} onChange={(e) => setBaths(e.target.value)} placeholder="2.5" className="mt-1.5" />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="tone">Tone</Label>
-                <Select value={tone} onValueChange={setTone}>
-                  <SelectTrigger id="tone" className="mt-1.5 w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="professional">Professional</SelectItem>
-                    <SelectItem value="luxury">Luxury</SelectItem>
-                    <SelectItem value="warm">Warm &amp; friendly</SelectItem>
-                    <SelectItem value="punchy">Short &amp; punchy</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="highlights">Notes / highlights</Label>
-                <Textarea
-                  id="highlights"
-                  value={highlights}
-                  onChange={(e) => setHighlights(e.target.value)}
-                  placeholder="Renovated kitchen, corner lot, new roof 2024, walkable to downtown"
-                  className="mt-1.5 min-h-24"
-                />
-              </div>
-
-              <Button type="submit" className="w-full" disabled={mutation.isPending}>
-                {mutation.isPending ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Generating…
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="size-4" />
-                    Generate listing copy
-                  </>
-                )}
-              </Button>
-            </form>
-
-            <section aria-live="polite" className="space-y-4">
-              {!result && !mutation.isPending && (
-                <div className="flex h-full min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed border-border p-10 text-center">
-                  <Sparkles className="size-6 text-muted-foreground" />
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    Your listing description and captions will appear here.
-                  </p>
-                </div>
-              )}
-
-              {mutation.isPending && (
-                <div className="flex h-full min-h-72 flex-col items-center justify-center rounded-2xl border border-border p-10 text-center">
-                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
-                  <p className="mt-3 text-sm text-muted-foreground">Writing your listing copy…</p>
-                </div>
-              )}
-
-              {result && (
-                <>
-                  <CopyBlock title="Headline" text={result.headline} />
-                  <CopyBlock title="MLS description" text={result.mlsDescription} />
-                  <CopyBlock title="Short description" text={result.shortDescription} />
-                  <div className="rounded-xl border border-border bg-card p-5">
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                        Highlights
-                      </h3>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          navigator.clipboard.writeText(result.bullets.map((b) => `• ${b}`).join("\n"));
-                          toast.success("Highlights copied");
-                        }}
-                      >
-                        <Copy className="size-4" />
-                        Copy
-                      </Button>
-                    </div>
-                    <ul className="list-disc space-y-1 pl-5 text-sm text-card-foreground">
-                      {result.bullets.map((b, i) => (
-                        <li key={i}>{b}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <CopyBlock title="Instagram" text={result.instagram} />
-                    <CopyBlock title="Facebook" text={result.facebook} />
-                    <CopyBlock title="LinkedIn" text={result.linkedin} className="md:col-span-2" />
-                  </div>
-                  <CopyBlock title="Hashtags" text={result.hashtags.join(" ")} />
-                </>
-              )}
-            </section>
-          </div>
+          <Generator variant="pro" />
         )}
       </main>
     </div>
