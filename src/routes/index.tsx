@@ -318,15 +318,19 @@ function LandingPage() {
               )}
             </div>
           </div>
+          </TiltCard>
+          </Reveal>
         </div>
       </section>
 
       {/* How it works */}
       <section className="border-y border-border bg-muted/30">
         <div className="mx-auto max-w-6xl px-6 py-24">
+          <Reveal>
           <h2 className="text-center font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
             Three steps. Sixty seconds.
           </h2>
+          </Reveal>
           <div className="mt-14 grid gap-10 sm:grid-cols-3">
             {[
               {
