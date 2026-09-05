@@ -351,19 +351,24 @@ function LandingPage() {
                 title: "Copy & post",
                 text: "One click copies your MLS description, highlight bullets, and ready-to-post social captions.",
               },
-            ].map(({ icon: Icon, step, title, text }) => (
-              <div key={step} className="relative rounded-2xl border border-border bg-card p-8">
-                <span className="absolute right-6 top-6 font-display text-5xl font-semibold text-muted">
-                  {step}
-                </span>
-                <div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                  <Icon className="size-6" />
+            ].map(({ icon: Icon, step, title, text }, i) => (
+              <Reveal key={step} delay={i * 150}>
+                <div className="relative h-full rounded-2xl border border-border bg-card p-8">
+                  <span className="absolute right-6 top-6 font-display text-5xl font-semibold text-muted">
+                    {step}
+                  </span>
+                  <div
+                    className="animate-float-soft flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground"
+                    style={{ animationDelay: `${i * 0.7}s` }}
+                  >
+                    <Icon className="size-6" />
+                  </div>
+                  <h3 className="mt-5 text-lg font-semibold tracking-tight text-card-foreground">
+                    {title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{text}</p>
                 </div>
-                <h3 className="mt-5 text-lg font-semibold tracking-tight text-card-foreground">
-                  {title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{text}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -371,6 +376,7 @@ function LandingPage() {
 
       {/* Testimonial */}
       <section className="mx-auto max-w-3xl px-6 py-24 text-center">
+        <Reveal>
         <Quote className="mx-auto size-8 text-primary" />
         <blockquote className="mt-6 font-display text-2xl font-medium leading-snug tracking-tight text-foreground sm:text-3xl">
           "I used to lose an hour per listing writing descriptions and posts. Now it's done before
