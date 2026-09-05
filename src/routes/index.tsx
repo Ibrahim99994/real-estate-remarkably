@@ -222,6 +222,7 @@ function LandingPage() {
             </Button>
             <p className="text-sm text-white/60">No account needed. Then $29/mo for unlimited.</p>
           </div>
+          </Reveal>
         </div>
       </section>
 
