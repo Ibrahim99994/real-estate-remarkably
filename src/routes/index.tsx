@@ -198,6 +198,7 @@ function LandingPage() {
         />
         <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black/70 via-black/55 to-background" />
         <div className="mx-auto flex max-w-6xl flex-col items-center px-6 pb-28 pt-36 text-center sm:pt-44">
+          <Reveal>
           <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-medium tracking-wide text-white backdrop-blur">
             <Sparkles className="size-3.5" />
             Built for busy agents
