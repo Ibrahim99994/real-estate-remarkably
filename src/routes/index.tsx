@@ -249,7 +249,7 @@ function LandingPage() {
       {/* Before / After */}
 
       <section className="mx-auto max-w-6xl px-6 py-24">
-        <div className="mx-auto max-w-2xl text-center">
+        <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
             From rough notes to ready-to-post
           </h2>
@@ -257,11 +257,13 @@ function LandingPage() {
             This is a real example of what ListingCraft produces from the details you'd jot down
             after a walkthrough.
           </p>
-        </div>
+        </Reveal>
 
         <div className="relative mt-14 grid items-stretch gap-6 lg:grid-cols-[1fr_auto_1fr]">
           {/* Before */}
-          <div className="rounded-2xl border border-dashed border-border bg-muted/40 p-7">
+          <Reveal delay={100}>
+          <TiltCard className="h-full">
+          <div className="h-full rounded-2xl border border-dashed border-border bg-muted/40 p-7">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               What you type in
             </p>
