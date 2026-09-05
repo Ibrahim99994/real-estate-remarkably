@@ -427,6 +427,8 @@ function LandingPage() {
               Secure card payment · 30 days of access · cancel any time
             </p>
           </div>
+          </TiltCard>
+          </Reveal>
         </div>
       </section>
 
