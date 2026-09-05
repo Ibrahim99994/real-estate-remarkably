@@ -148,10 +148,10 @@
 @keyframes glow-soft {
   0%,
   100% {
-    box-shadow: 0 0 0 0 oklch(0.208 0.042 265.755 / 0%);
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary) 0%, transparent);
   }
   50% {
-    box-shadow: 0 8px 24px -6px oklch(0.208 0.042 265.755 / 25%);
+    box-shadow: 0 8px 24px -6px color-mix(in oklch, var(--primary) 25%, transparent);
   }
 }
 
