@@ -134,6 +134,72 @@
   --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
+/* Subtle motion utilities — pure CSS, no JS libraries */
+@keyframes float-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes glow-soft {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 oklch(0.208 0.042 265.755 / 0%);
+  }
+  50% {
+    box-shadow: 0 8px 24px -6px oklch(0.208 0.042 265.755 / 25%);
+  }
+}
+
+.animate-float-soft {
+  animation:
+    float-soft 3.5s ease-in-out infinite,
+    glow-soft 3.5s ease-in-out infinite;
+}
+
+.animate-float-soft:nth-child(2) {
+  animation-delay: 0.6s;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.7s ease-out,
+    transform 0.7s ease-out;
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tilt-card {
+  transition: transform 0.25s ease-out;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-soft {
+    animation: none;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .tilt-card {
+    transition: none;
+  }
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
