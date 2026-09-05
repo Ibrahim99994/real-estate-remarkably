@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   ArrowRight,
   Check,
@@ -77,7 +77,7 @@ function Reveal({
   className = "",
   delay = 0,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
   delay?: number;
 }) {
