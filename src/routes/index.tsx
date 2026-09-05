@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   ArrowRight,
   Check,
@@ -71,6 +71,84 @@ function fileToDataUrl(file: File) {
   });
 }
 
+/* Fade + slide-up when scrolled into view */
+function Reveal({
+  children,
+  className = "",
+  delay = 0,
+}: {
+  children: ReactNode;
+  className?: string;
+  delay?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setVisible(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setVisible(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.15, rootMargin: "0px 0px -40px 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className={`reveal ${visible ? "is-visible" : ""} ${className}`}
+      style={{ "--reveal-delay": `${delay}ms` } as CSSProperties}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* Soft 3D tilt toward the cursor — pointer only, no-op on touch */
+function TiltCard({ children, className = "" }: { children: ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (window.matchMedia("(pointer: coarse)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const onMove = (e: PointerEvent) => {
+      const rect = el.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width - 0.5;
+      const py = (e.clientY - rect.top) / rect.height - 0.5;
+      el.style.transform = `perspective(900px) rotateY(${px * 6}deg) rotateX(${py * -6}deg) translateY(-2px)`;
+    };
+    const onLeave = () => {
+      el.style.transform = "";
+    };
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerleave", onLeave);
+    return () => {
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("pointerleave", onLeave);
+    };
+  }, []);
+
+  return (
+    <div ref={ref} className={`tilt-card ${className}`}>
+      {children}
+    </div>
+  );
+}
+
 function Logo() {
   return (
     <div className="flex items-center gap-3">
@@ -120,6 +198,7 @@ function LandingPage() {
         />
         <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black/70 via-black/55 to-background" />
         <div className="mx-auto flex max-w-6xl flex-col items-center px-6 pb-28 pt-36 text-center sm:pt-44">
+          <Reveal>
           <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-medium tracking-wide text-white backdrop-blur">
             <Sparkles className="size-3.5" />
             Built for busy agents
@@ -144,12 +223,13 @@ function LandingPage() {
             </Button>
             <p className="text-sm text-white/60">No account needed. Then $29/mo for unlimited.</p>
           </div>
+          </Reveal>
         </div>
       </section>
 
       {/* Free trial generator */}
       <section id="try" className="mx-auto max-w-6xl scroll-mt-8 px-6 py-24">
-        <div className="mx-auto max-w-2xl text-center">
+        <Reveal className="mx-auto max-w-2xl text-center">
           <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-primary">
             <Sparkles className="size-3.5" />
             Free trial — 1 listing
@@ -160,7 +240,7 @@ function LandingPage() {
           <p className="mt-4 text-muted-foreground">
             Enter a property's details and see the AI-written listing and captions instantly.
           </p>
-        </div>
+        </Reveal>
         <div className="mt-12">
           <Generator variant="free" />
         </div>
@@ -169,7 +249,7 @@ function LandingPage() {
       {/* Before / After */}
 
       <section className="mx-auto max-w-6xl px-6 py-24">
-        <div className="mx-auto max-w-2xl text-center">
+        <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
             From rough notes to ready-to-post
           </h2>
@@ -177,11 +257,13 @@ function LandingPage() {
             This is a real example of what ListingCraft produces from the details you'd jot down
             after a walkthrough.
           </p>
-        </div>
+        </Reveal>
 
         <div className="relative mt-14 grid items-stretch gap-6 lg:grid-cols-[1fr_auto_1fr]">
           {/* Before */}
-          <div className="rounded-2xl border border-dashed border-border bg-muted/40 p-7">
+          <Reveal delay={100}>
+          <TiltCard className="h-full">
+          <div className="h-full rounded-2xl border border-dashed border-border bg-muted/40 p-7">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               What you type in
             </p>
@@ -196,6 +278,8 @@ function LandingPage() {
               ~30 seconds of typing, plus a few photos
             </p>
           </div>
+          </TiltCard>
+          </Reveal>
 
           {/* Arrow */}
           <div className="flex items-center justify-center">
@@ -205,7 +289,9 @@ function LandingPage() {
           </div>
 
           {/* After */}
-          <div className="rounded-2xl border border-border bg-card p-7 shadow-xl shadow-primary/5">
+          <Reveal delay={250}>
+          <TiltCard className="h-full">
+          <div className="h-full rounded-2xl border border-border bg-card p-7 shadow-xl shadow-primary/5">
             <p className="text-xs font-semibold uppercase tracking-widest text-primary">
               What you get back
             </p>
@@ -232,15 +318,19 @@ function LandingPage() {
               )}
             </div>
           </div>
+          </TiltCard>
+          </Reveal>
         </div>
       </section>
 
       {/* How it works */}
       <section className="border-y border-border bg-muted/30">
         <div className="mx-auto max-w-6xl px-6 py-24">
+          <Reveal>
           <h2 className="text-center font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
             Three steps. Sixty seconds.
           </h2>
+          </Reveal>
           <div className="mt-14 grid gap-10 sm:grid-cols-3">
             {[
               {
@@ -261,19 +351,24 @@ function LandingPage() {
                 title: "Copy & post",
                 text: "One click copies your MLS description, highlight bullets, and ready-to-post social captions.",
               },
-            ].map(({ icon: Icon, step, title, text }) => (
-              <div key={step} className="relative rounded-2xl border border-border bg-card p-8">
-                <span className="absolute right-6 top-6 font-display text-5xl font-semibold text-muted">
-                  {step}
-                </span>
-                <div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                  <Icon className="size-6" />
+            ].map(({ icon: Icon, step, title, text }, i) => (
+              <Reveal key={step} delay={i * 150}>
+                <div className="relative h-full rounded-2xl border border-border bg-card p-8">
+                  <span className="absolute right-6 top-6 font-display text-5xl font-semibold text-muted">
+                    {step}
+                  </span>
+                  <div
+                    className="animate-float-soft flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground"
+                    style={{ animationDelay: `${i * 0.7}s` }}
+                  >
+                    <Icon className="size-6" />
+                  </div>
+                  <h3 className="mt-5 text-lg font-semibold tracking-tight text-card-foreground">
+                    {title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{text}</p>
                 </div>
-                <h3 className="mt-5 text-lg font-semibold tracking-tight text-card-foreground">
-                  {title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{text}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -281,6 +376,7 @@ function LandingPage() {
 
       {/* Testimonial */}
       <section className="mx-auto max-w-3xl px-6 py-24 text-center">
+        <Reveal>
         <Quote className="mx-auto size-8 text-primary" />
         <blockquote className="mt-6 font-display text-2xl font-medium leading-snug tracking-tight text-foreground sm:text-3xl">
           "I used to lose an hour per listing writing descriptions and posts. Now it's done before
@@ -288,12 +384,15 @@ function LandingPage() {
         </blockquote>
         <p className="mt-6 text-sm font-medium text-foreground">Marcus T.</p>
         <p className="text-sm text-muted-foreground">Residential agent, 12 listings/month</p>
+        </Reveal>
       </section>
 
       {/* Pricing / CTA */}
       <section className="border-t border-border bg-muted/30">
         <div className="mx-auto max-w-6xl px-6 py-24">
-          <div className="mx-auto max-w-lg rounded-3xl border border-border bg-card p-10 text-center shadow-2xl shadow-primary/10">
+          <Reveal>
+          <TiltCard className="mx-auto max-w-lg">
+          <div className="rounded-3xl border border-border bg-card p-10 text-center shadow-2xl shadow-primary/10">
             <p className="text-xs font-semibold uppercase tracking-widest text-primary">
               Simple pricing
             </p>
@@ -328,6 +427,8 @@ function LandingPage() {
               Secure card payment · 30 days of access · cancel any time
             </p>
           </div>
+          </TiltCard>
+          </Reveal>
         </div>
       </section>
 
