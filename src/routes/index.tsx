@@ -229,7 +229,7 @@ function LandingPage() {
 
       {/* Free trial generator */}
       <section id="try" className="mx-auto max-w-6xl scroll-mt-8 px-6 py-24">
-        <div className="mx-auto max-w-2xl text-center">
+        <Reveal className="mx-auto max-w-2xl text-center">
           <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-primary">
             <Sparkles className="size-3.5" />
             Free trial — 1 listing
@@ -240,7 +240,7 @@ function LandingPage() {
           <p className="mt-4 text-muted-foreground">
             Enter a property's details and see the AI-written listing and captions instantly.
           </p>
-        </div>
+        </Reveal>
         <div className="mt-12">
           <Generator variant="free" />
         </div>
