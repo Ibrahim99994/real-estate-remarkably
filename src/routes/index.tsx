@@ -384,12 +384,15 @@ function LandingPage() {
         </blockquote>
         <p className="mt-6 text-sm font-medium text-foreground">Marcus T.</p>
         <p className="text-sm text-muted-foreground">Residential agent, 12 listings/month</p>
+        </Reveal>
       </section>
 
       {/* Pricing / CTA */}
       <section className="border-t border-border bg-muted/30">
         <div className="mx-auto max-w-6xl px-6 py-24">
-          <div className="mx-auto max-w-lg rounded-3xl border border-border bg-card p-10 text-center shadow-2xl shadow-primary/10">
+          <Reveal>
+          <TiltCard className="mx-auto max-w-lg">
+          <div className="rounded-3xl border border-border bg-card p-10 text-center shadow-2xl shadow-primary/10">
             <p className="text-xs font-semibold uppercase tracking-widest text-primary">
               Simple pricing
             </p>
