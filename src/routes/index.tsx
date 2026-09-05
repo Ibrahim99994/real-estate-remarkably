@@ -278,6 +278,8 @@ function LandingPage() {
               ~30 seconds of typing, plus a few photos
             </p>
           </div>
+          </TiltCard>
+          </Reveal>
 
           {/* Arrow */}
           <div className="flex items-center justify-center">
@@ -287,7 +289,9 @@ function LandingPage() {
           </div>
 
           {/* After */}
-          <div className="rounded-2xl border border-border bg-card p-7 shadow-xl shadow-primary/5">
+          <Reveal delay={250}>
+          <TiltCard className="h-full">
+          <div className="h-full rounded-2xl border border-border bg-card p-7 shadow-xl shadow-primary/5">
             <p className="text-xs font-semibold uppercase tracking-widest text-primary">
               What you get back
             </p>
